@@ -1,0 +1,963 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Navigasi Peta - Maps Navigator</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Courier New', monospace;
+            background: linear-gradient(135deg, #0a0a0a 0%, #1a0033 100%);
+            color: #00ff00;
+            height: 100vh;
+            position: relative;
+            overflow: hidden;
+        }
+
+        /* Animated background scanlines */
+        @keyframes scanlines {
+            0% { background-position: 0 0; }
+            100% { background-position: 0 100px; }
+        }
+
+        body::before {
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: repeating-linear-gradient(
+                0deg,
+                rgba(0, 255, 0, 0.03) 0px,
+                rgba(0, 255, 0, 0.03) 1px,
+                transparent 1px,
+                transparent 2px
+            );
+            animation: scanlines 8s linear infinite;
+            pointer-events: none;
+            z-index: 1;
+        }
+
+        .container {
+            position: relative;
+            z-index: 2;
+            width: 100%;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        header {
+            background: rgba(0, 20, 0, 0.9);
+            border-bottom: 2px solid #00ff00;
+            padding: 15px 20px;
+            text-align: center;
+            box-shadow: 0 0 20px rgba(0, 255, 0, 0.3);
+            animation: glow 2s infinite alternate;
+        }
+
+        @keyframes glow {
+            from { text-shadow: 0 0 10px #00ff00, 0 0 20px #00aa00; }
+            to { text-shadow: 0 0 20px #00ff00, 0 0 30px #00dd00; }
+        }
+
+        h1 {
+            font-size: 1.8em;
+            color: #00ff00;
+            letter-spacing: 2px;
+            margin-bottom: 5px;
+        }
+
+        .subtitle {
+            color: #00aa00;
+            font-size: 0.85em;
+        }
+
+        .main-content {
+            display: flex;
+            gap: 15px;
+            padding: 15px;
+            flex: 1;
+            overflow: hidden;
+        }
+
+        .panel {
+            background: rgba(0, 20, 0, 0.8);
+            border: 2px solid #00ff00;
+            border-radius: 5px;
+            padding: 15px;
+            box-shadow: 0 0 20px rgba(0, 255, 0, 0.3);
+            backdrop-filter: blur(10px);
+            position: relative;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .panel::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(0, 255, 0, 0.1), transparent);
+            animation: shimmer 3s infinite;
+            z-index: -1;
+        }
+
+        @keyframes shimmer {
+            0% { left: -100%; }
+            100% { left: 100%; }
+        }
+
+        .map-panel {
+            flex: 1;
+            position: relative;
+        }
+
+        .map-canvas {
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            border: 1px solid #00aa00;
+            border-radius: 3px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .map-grid {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            background-image: 
+                repeating-linear-gradient(0deg, transparent, transparent 19px, #00330033 19px, #00330033 20px),
+                repeating-linear-gradient(90deg, transparent, transparent 19px, #00330033 19px, #00330033 20px);
+        }
+
+        .map-content {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            z-index: 2;
+        }
+
+        .marker {
+            position: absolute;
+            width: 20px;
+            height: 20px;
+            background: #00ff00;
+            border: 2px solid #00aa00;
+            border-radius: 50%;
+            cursor: pointer;
+            transition: all 0.3s;
+            box-shadow: 0 0 10px #00ff00;
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { box-shadow: 0 0 5px #00ff00; }
+            50% { box-shadow: 0 0 20px #00ff00; }
+        }
+
+        .marker:hover {
+            width: 28px;
+            height: 28px;
+            box-shadow: 0 0 30px #00ff00;
+        }
+
+        .marker.current {
+            background: #ffaa00;
+            border-color: #ff7700;
+            animation: pulse-current 1s infinite;
+        }
+
+        @keyframes pulse-current {
+            0%, 100% { box-shadow: 0 0 10px #ffaa00; }
+            50% { box-shadow: 0 0 25px #ffaa00; }
+        }
+
+        .marker-label {
+            position: absolute;
+            top: -25px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(0, 0, 0, 0.9);
+            color: #00ff00;
+            padding: 3px 8px;
+            border-radius: 3px;
+            font-size: 0.7em;
+            white-space: nowrap;
+            border: 1px solid #00aa00;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.3s;
+        }
+
+        .marker:hover .marker-label {
+            opacity: 1;
+        }
+
+        .route-line {
+            position: absolute;
+            stroke: #00ff00;
+            stroke-width: 2;
+            fill: none;
+            opacity: 0.7;
+        }
+
+        .info-panel {
+            width: 350px;
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        .panel-title {
+            font-size: 1.1em;
+            color: #00ff00;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            border-bottom: 2px solid #00aa00;
+            padding-bottom: 8px;
+            margin-bottom: 10px;
+        }
+
+        .search-box {
+            position: relative;
+        }
+
+        .search-box input {
+            width: 100%;
+            padding: 10px;
+            background: rgba(0, 20, 0, 0.8);
+            border: 1px solid #00aa00;
+            color: #00ff00;
+            border-radius: 3px;
+            font-family: 'Courier New', monospace;
+            font-size: 0.85em;
+        }
+
+        .search-box input:focus {
+            outline: none;
+            border-color: #00ff00;
+            box-shadow: 0 0 10px rgba(0, 255, 0, 0.3);
+        }
+
+        .search-results {
+            position: absolute;
+            top: 100%;
+            left: 0;
+            right: 0;
+            background: rgba(0, 0, 0, 0.9);
+            border: 1px solid #00aa00;
+            border-top: none;
+            border-radius: 0 0 3px 3px;
+            max-height: 250px;
+            overflow-y: auto;
+            z-index: 100;
+            display: none;
+        }
+
+        .search-results.active {
+            display: block;
+        }
+
+        .search-item {
+            padding: 8px 10px;
+            color: #00ff00;
+            border-bottom: 1px solid rgba(0, 255, 0, 0.2);
+            cursor: pointer;
+            transition: background 0.3s;
+            font-size: 0.8em;
+        }
+
+        .search-item:hover {
+            background: rgba(0, 255, 0, 0.2);
+        }
+
+        .location-info {
+            background: rgba(0, 40, 0, 0.6);
+            border: 1px solid #00aa00;
+            border-radius: 3px;
+            padding: 12px;
+            font-size: 0.8em;
+            flex-grow: 1;
+            overflow-y: auto;
+        }
+
+        .location-info.empty {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #00aa00;
+            text-align: center;
+        }
+
+        .location-detail {
+            margin-bottom: 12px;
+            padding-bottom: 12px;
+            border-bottom: 1px solid rgba(0, 255, 0, 0.2);
+        }
+
+        .location-detail:last-child {
+            border-bottom: none;
+            margin-bottom: 0;
+            padding-bottom: 0;
+        }
+
+        .location-name {
+            color: #00ff00;
+            font-weight: bold;
+            margin-bottom: 3px;
+            font-size: 0.95em;
+        }
+
+        .location-address {
+            color: #00aa00;
+            margin-bottom: 5px;
+        }
+
+        .location-rating {
+            display: inline-block;
+            color: #ffaa00;
+            margin-bottom: 5px;
+        }
+
+        .location-category {
+            background: rgba(0, 255, 0, 0.1);
+            color: #00ff00;
+            padding: 2px 6px;
+            border-radius: 2px;
+            font-size: 0.75em;
+            display: inline-block;
+            margin-right: 5px;
+            margin-bottom: 5px;
+        }
+
+        .location-distance {
+            color: #00aaff;
+            font-size: 0.85em;
+        }
+
+        .button-group {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+
+        button {
+            flex: 1;
+            min-width: 80px;
+            padding: 10px;
+            background: linear-gradient(135deg, #003300 0%, #006600 100%);
+            color: #00ff00;
+            border: 2px solid #00ff00;
+            border-radius: 3px;
+            cursor: pointer;
+            font-family: 'Courier New', monospace;
+            font-weight: bold;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            transition: all 0.3s ease;
+            font-size: 0.75em;
+            text-shadow: 0 0 5px #00ff00;
+        }
+
+        button:hover {
+            background: linear-gradient(135deg, #006600 0%, #00aa00 100%);
+            box-shadow: 0 0 15px rgba(0, 255, 0, 0.6);
+            transform: translateY(-2px);
+        }
+
+        button:active {
+            transform: translateY(0);
+        }
+
+        button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .zoom-controls {
+            position: absolute;
+            right: 15px;
+            top: 15px;
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+            z-index: 10;
+        }
+
+        .zoom-btn {
+            width: 35px;
+            height: 35px;
+            padding: 0;
+            min-width: auto;
+            font-size: 1.2em;
+        }
+
+        .coords-display {
+            position: absolute;
+            bottom: 10px;
+            left: 10px;
+            background: rgba(0, 0, 0, 0.7);
+            border: 1px solid #00aa00;
+            padding: 5px 10px;
+            border-radius: 3px;
+            font-size: 0.7em;
+            color: #00ff00;
+            z-index: 10;
+        }
+
+        .tab-buttons {
+            display: flex;
+            gap: 5px;
+            margin-bottom: 10px;
+        }
+
+        .tab-btn {
+            flex: 1;
+            padding: 8px;
+            font-size: 0.7em;
+            min-width: 0;
+        }
+
+        .tab-btn.active {
+            background: linear-gradient(135deg, #006600 0%, #00aa00 100%);
+            box-shadow: 0 0 10px rgba(0, 255, 0, 0.6);
+        }
+
+        .tab-content {
+            display: none;
+            flex: 1;
+            overflow-y: auto;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        .route-info {
+            background: rgba(0, 40, 0, 0.6);
+            border: 1px solid #00aa00;
+            border-radius: 3px;
+            padding: 10px;
+            font-size: 0.8em;
+            margin-bottom: 10px;
+        }
+
+        .route-step {
+            padding: 6px 0;
+            color: #00ff00;
+            border-bottom: 1px solid rgba(0, 255, 0, 0.2);
+            font-size: 0.85em;
+        }
+
+        .route-step:last-child {
+            border-bottom: none;
+        }
+
+        .developer-grid {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 8px;
+            font-size: 0.75em;
+        }
+
+        .dev-card {
+            background: rgba(0, 40, 0, 0.6);
+            border: 1px solid #00aa00;
+            border-radius: 3px;
+            padding: 8px;
+        }
+
+        .dev-name {
+            color: #00ff00;
+            font-weight: bold;
+            margin-bottom: 2px;
+        }
+
+        .dev-role {
+            color: #00aaff;
+            margin-bottom: 3px;
+        }
+
+        .dev-contact {
+            color: #00aa00;
+            word-break: break-all;
+        }
+
+        .status-indicator {
+            display: inline-block;
+            width: 6px;
+            height: 6px;
+            background: #00ff00;
+            border-radius: 50%;
+            margin-right: 6px;
+            animation: pulse-indicator 1s infinite;
+        }
+
+        @keyframes pulse-indicator {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+
+        .footer {
+            background: rgba(0, 20, 0, 0.9);
+            border-top: 2px solid #00ff00;
+            padding: 10px 20px;
+            text-align: center;
+            color: #00aa00;
+            font-size: 0.75em;
+        }
+
+        @media (max-width: 1200px) {
+            .main-content {
+                flex-direction: column;
+            }
+
+            .info-panel {
+                width: 100%;
+                max-height: 300px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>🗺️ NAVIGASI PETA</h1>
+            <p class="subtitle">Maps Navigator - Penunjuk Arah Interaktif</p>
+        </header>
+
+        <div class="main-content">
+            <!-- Map Panel -->
+            <div class="panel map-panel">
+                <div class="map-canvas">
+                    <div class="map-grid"></div>
+                    <svg class="route-line" id="routeSvg"></svg>
+                    <div class="map-content" id="mapContent"></div>
+                    <div class="zoom-controls">
+                        <button class="zoom-btn" id="zoomIn" title="Perbesar">+</button>
+                        <button class="zoom-btn" id="zoomOut" title="Perkecil">−</button>
+                    </div>
+                    <div class="coords-display" id="coordsDisplay">Lat: 0.00 | Lon: 0.00</div>
+                </div>
+            </div>
+
+            <!-- Info Panel -->
+            <div class="info-panel">
+                <!-- Search Box -->
+                <div class="search-box">
+                    <input type="text" id="searchInput" placeholder="🔍 Cari lokasi...">
+                    <div class="search-results" id="searchResults"></div>
+                </div>
+
+                <!-- Tabs -->
+                <div class="tab-buttons">
+                    <button class="tab-btn active" data-tab="locations">Lokasi</button>
+                    <button class="tab-btn" data-tab="route">Rute</button>
+                    <button class="tab-btn" data-tab="developers">Pengembang</button>
+                </div>
+
+                <!-- Locations Tab -->
+                <div id="locations" class="tab-content active">
+                    <div class="location-info empty" id="locationInfo">
+                        Klik marker di peta untuk melihat detail lokasi
+                    </div>
+                </div>
+
+                <!-- Route Tab -->
+                <div id="route" class="tab-content">
+                    <div id="routeInfo" class="location-info empty">
+                        Pilih dua lokasi untuk melihat rute
+                    </div>
+                    <div class="button-group">
+                        <button id="startRouteBtn">Mulai Rute</button>
+                        <button id="clearRouteBtn">Hapus Rute</button>
+                    </div>
+                </div>
+
+                <!-- Developers Tab -->
+                <div id="developers" class="tab-content">
+                    <div class="developer-grid" id="developersList"></div>
+                </div>
+            </div>
+        </div>
+
+        <div class="footer">
+            <div>━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━</div>
+            <div><span class="status-indicator"></span>Aplikasi Navigasi Peta v1.0 | © 2026</div>
+            <div>━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━</div>
+        </div>
+    </div>
+
+    <script>
+        // ===== DATABASE LOKASI =====
+        const locationsDatabase = [
+            // Restoran
+            { id: 1, name: 'Rumah Makan Berkah', category: 'Restoran', address: 'Jl. Merdeka No. 45', lat: 50, lon: 50, rating: 4.7, distance: 0.5 },
+            { id: 2, name: 'Warung Nasi Kuning', category: 'Restoran', address: 'Jl. Sudirman No. 23', lat: 80, lon: 40, rating: 4.5, distance: 1.2 },
+            { id: 3, name: 'Kafe Bersama', category: 'Kafe', address: 'Jl. Ahmad Yani No. 12', lat: 60, lon: 70, rating: 4.6, distance: 0.8 },
+            { id: 4, name: 'Sushi Deluxe', category: 'Restoran', address: 'Jl. Gatot Subroto No. 99', lat: 40, lon: 60, rating: 4.8, distance: 1.5 },
+            { id: 5, name: 'Bakso Urat Legendaris', category: 'Restoran', address: 'Jl. Diponegoro No. 77', lat: 70, lon: 80, rating: 4.4, distance: 0.9 },
+            
+            // Toko
+            { id: 6, name: 'Supermarket Jaya', category: 'Toko', address: 'Jl. Permata No. 15', lat: 55, lon: 45, rating: 4.3, distance: 0.6 },
+            { id: 7, name: 'Toko Elektronik Pusat', category: 'Toko', address: 'Jl. Teuku Umar No. 34', lat: 65, lon: 55, rating: 4.5, distance: 1.1 },
+            { id: 8, name: 'Butik Fashion Cantik', category: 'Toko', address: 'Jl. Imam Bonjol No. 22', lat: 75, lon: 65, rating: 4.6, distance: 1.3 },
+            { id: 9, name: 'Apotek 24 Jam', category: 'Apotek', address: 'Jl. Cokroaminoto No. 11', lat: 45, lon: 75, rating: 4.7, distance: 0.4 },
+            { id: 10, name: 'Toko Buku Gramedia', category: 'Toko', address: 'Jl. KH. Agus Salim No. 56', lat: 85, lon: 50, rating: 4.4, distance: 1.8 },
+
+            // Kantor & Layanan
+            { id: 11, name: 'Bank Nasional', category: 'Bank', address: 'Jl. Yani No. 100', lat: 50, lon: 60, rating: 4.6, distance: 0.7 },
+            { id: 12, name: 'Kantor Polisi', category: 'Layanan', address: 'Jl. Letnan Jendral S. Parman No. 88', lat: 30, lon: 70, rating: 4.2, distance: 1.4 },
+            { id: 13, name: 'Rumah Sakit Mitra', category: 'Rumah Sakit', address: 'Jl. Veteran No. 42', lat: 60, lon: 30, rating: 4.8, distance: 1.6 },
+            { id: 14, name: 'Puskesmas Sejahtera', category: 'Kesehatan', address: 'Jl. Pemuda No. 19', lat: 70, lon: 40, rating: 4.5, distance: 1.0 },
+            { id: 15, name: 'Kantor Pajak', category: 'Kantor', address: 'Jl. P. Diponegoro No. 65', lat: 55, lon: 85, rating: 4.1, distance: 2.0 },
+
+            // Rekreasi
+            { id: 16, name: 'Taman Kota Indah', category: 'Taman', address: 'Jl. Wijaya Kusuma No. 33', lat: 40, lon: 40, rating: 4.7, distance: 0.9 },
+            { id: 17, name: 'Bioskop Grand Cinema', category: 'Hiburan', address: 'Jl. Panglima Sudirman No. 27', lat: 75, lon: 75, rating: 4.6, distance: 1.7 },
+            { id: 18, name: 'Kolam Renang Permata', category: 'Olahraga', address: 'Jl. Merpati No. 8', lat: 85, lon: 85, rating: 4.4, distance: 2.1 },
+            { id: 19, name: 'Gym Fitness Plus', category: 'Olahraga', address: 'Jl. Raden Ajeng Kartini No. 51', lat: 35, lon: 55, rating: 4.5, distance: 1.2 },
+            { id: 20, name: 'Museum Sejarah Kota', category: 'Wisata', address: 'Jl. Gajah Mada No. 48', lat: 50, lon: 20, rating: 4.8, distance: 2.5 },
+
+            // Pendidikan
+            { id: 21, name: 'SD Negeri 1 Maju', category: 'Pendidikan', address: 'Jl. Proklamasi No. 14', lat: 60, lon: 50, rating: 4.3, distance: 0.8 },
+            { id: 22, name: 'SMP Bina Bangsa', category: 'Pendidikan', address: 'Jl. Pesantren No. 26', lat: 45, lon: 85, rating: 4.4, distance: 1.9 },
+            { id: 23, name: 'SMA Unggul Jaya', category: 'Pendidikan', address: 'Jl. Sultan Hasanuddin No. 73', lat: 80, lon: 65, rating: 4.6, distance: 1.5 },
+            { id: 24, name: 'Universitas Terbuka', category: 'Pendidikan', address: 'Jl. Gatot Subroto No. 246', lat: 30, lon: 30, rating: 4.7, distance: 2.2 },
+            { id: 25, name: 'Sekolah Bahasa Internasional', category: 'Pendidikan', address: 'Jl. Pendidikan No. 99', lat: 75, lon: 25, rating: 4.5, distance: 2.6 }
+        ];
+
+        // ===== DATABASE PENGEMBANG =====
+        const developersDatabase = [
+            {
+                id: 1,
+                name: 'Ahmad Rizki Harahap',
+                role: 'Lead Developer',
+                email: 'ahmad.rizki@mapsnavigator.dev',
+                github: 'github.com/ahmadrizki',
+                specialty: 'Frontend & Map Integration'
+            },
+            {
+                id: 2,
+                name: 'Siti Nurhaliza',
+                role: 'Backend Developer',
+                email: 'siti.nurhaliza@mapsnavigator.dev',
+                github: 'github.com/sitinurhaliza',
+                specialty: 'Database & API'
+            },
+            {
+                id: 3,
+                name: 'Budi Santoso',
+                role: 'Full Stack Developer',
+                email: 'budi.santoso@mapsnavigator.dev',
+                github: 'github.com/budisantoso',
+                specialty: 'Route Algorithm'
+            },
+            {
+                id: 4,
+                name: 'Eka Putri Wijaya',
+                role: 'UI/UX Designer',
+                email: 'eka.putri@mapsnavigator.dev',
+                github: 'github.com/ekaputri',
+                specialty: 'Interface Design'
+            },
+            {
+                id: 5,
+                name: 'Rinto Harahap',
+                role: 'DevOps Engineer',
+                email: 'rinto.harahap@mapsnavigator.dev',
+                github: 'github.com/rintoharahap',
+                specialty: 'Infrastructure & Deployment'
+            },
+            {
+                id: 6,
+                name: 'Dewi Lestari',
+                role: 'QA Tester',
+                email: 'dewi.lestari@mapsnavigator.dev',
+                github: 'github.com/dewilestari',
+                specialty: 'Testing & Documentation'
+            }
+        ];
+
+        // ===== STATE MANAJEMEN =====
+        let state = {
+            zoomLevel: 1,
+            selectedMarkers: [],
+            currentLocation: null,
+            userLat: 50,
+            userLon: 50,
+            panOffsetX: 0,
+            panOffsetY: 0
+        };
+
+        // ===== DOM ELEMENTS =====
+        const mapContent = document.getElementById('mapContent');
+        const searchInput = document.getElementById('searchInput');
+        const searchResults = document.getElementById('searchResults');
+        const locationInfo = document.getElementById('locationInfo');
+        const routeInfo = document.getElementById('routeInfo');
+        const tabBtns = document.querySelectorAll('.tab-btn');
+        const tabContents = document.querySelectorAll('.tab-content');
+        const coordsDisplay = document.getElementById('coordsDisplay');
+        const routeSvg = document.getElementById('routeSvg');
+        const developersList = document.getElementById('developersList');
+
+        // ===== INISIALISASI =====
+        function init() {
+            renderMarkers();
+            renderDevelopers();
+            setupEventListeners();
+            updateUserLocation();
+        }
+
+        // ===== RENDER MARKERS =====
+        function renderMarkers() {
+            mapContent.innerHTML = '';
+            locationsDatabase.forEach(location => {
+                const marker = document.createElement('div');
+                marker.className = 'marker';
+                const x = (location.lon * state.zoomLevel) + state.panOffsetX;
+                const y = (location.lat * state.zoomLevel) + state.panOffsetY;
+                marker.style.left = x + 'px';
+                marker.style.top = y + 'px';
+                
+                marker.innerHTML = `<div class="marker-label">${location.name}</div>`;
+                
+                marker.addEventListener('click', () => showLocationInfo(location));
+                mapContent.appendChild(marker);
+            });
+
+            // Render user location
+            const userMarker = document.createElement('div');
+            userMarker.className = 'marker current';
+            userMarker.style.left = (state.userLon * state.zoomLevel + state.panOffsetX) + 'px';
+            userMarker.style.top = (state.userLat * state.zoomLevel + state.panOffsetY) + 'px';
+            userMarker.innerHTML = '<div class="marker-label">Posisi Anda</div>';
+            mapContent.appendChild(userMarker);
+        }
+
+        // ===== TAMPILKAN INFO LOKASI =====
+        function showLocationInfo(location) {
+            state.currentLocation = location;
+            let html = `
+                <div class="location-detail">
+                    <div class="location-name">📍 ${location.name}</div>
+                    <div class="location-address">📮 ${location.address}</div>
+                    <div class="location-rating">⭐ ${location.rating}/5.0 Rating</div><br>
+                    <div class="location-category">${location.category}</div>
+                    <div class="location-distance">📏 ${location.distance} km dari Anda</div>
+                </div>
+            `;
+            locationInfo.innerHTML = html;
+            locationInfo.classList.remove('empty');
+            
+            // Highlight marker
+            selectMarkerForRoute(location, true);
+        }
+
+        // ===== PENCARIAN LOKASI =====
+        searchInput.addEventListener('input', (e) => {
+            const query = e.target.value.toLowerCase();
+            if (query.length === 0) {
+                searchResults.classList.remove('active');
+                return;
+            }
+
+            const filtered = locationsDatabase.filter(loc => 
+                loc.name.toLowerCase().includes(query) ||
+                loc.address.toLowerCase().includes(query) ||
+                loc.category.toLowerCase().includes(query)
+            );
+
+            if (filtered.length === 0) {
+                searchResults.classList.remove('active');
+                return;
+            }
+
+            let html = '';
+            filtered.forEach(loc => {
+                html += `
+                    <div class="search-item" onclick="searchSelect(${loc.id})">
+                        📍 ${loc.name} - ${loc.category}
+                    </div>
+                `;
+            });
+            searchResults.innerHTML = html;
+            searchResults.classList.add('active');
+        });
+
+        function searchSelect(id) {
+            const location = locationsDatabase.find(l => l.id === id);
+            showLocationInfo(location);
+            searchInput.value = '';
+            searchResults.classList.remove('active');
+        }
+
+        window.searchSelect = searchSelect;
+
+        // ===== RUTE NAVIGASI =====
+        let routeStart = null;
+        let routeEnd = null;
+
+        function selectMarkerForRoute(location, isStart = true) {
+            if (isStart || state.selectedMarkers.length === 0) {
+                routeStart = location;
+                state.selectedMarkers = [location];
+            } else {
+                routeEnd = location;
+                state.selectedMarkers = [routeStart, routeEnd];
+                drawRoute();
+            }
+        }
+
+        function drawRoute() {
+            if (!routeStart || !routeEnd) return;
+
+            const x1 = routeStart.lon * state.zoomLevel + state.panOffsetX;
+            const y1 = routeStart.lat * state.zoomLevel + state.panOffsetY;
+            const x2 = routeEnd.lon * state.zoomLevel + state.panOffsetX;
+            const y2 = routeEnd.lat * state.zoomLevel + state.panOffsetY;
+
+            routeSvg.innerHTML = `<line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}"/>`;
+
+            // Hitung rute detail
+            const distance = Math.sqrt(Math.pow(routeEnd.lon - routeStart.lon, 2) + Math.pow(routeEnd.lat - routeStart.lat, 2)) / 10;
+            const duration = Math.round(distance * 5);
+
+            let html = `
+                <div class="route-info">
+                    <div class="route-step">🚩 Mulai: ${routeStart.name}</div>
+                    <div class="route-step">📍 Tujuan: ${routeEnd.name}</div>
+                    <div class="route-step">📏 Jarak: ${distance.toFixed(1)} km</div>
+                    <div class="route-step">⏱️ Estimasi: ${duration} menit</div>
+                </div>
+                <div style="color: #00ff00; font-size: 0.85em;">
+                    <strong>Petunjuk Arah:</strong><br>
+                    1. Kendarai ke ${routeStart.address}<br>
+                    2. Lanjutkan selama ±${duration} menit<br>
+                    3. Sampai di ${routeEnd.address}<br>
+                    4. Tujuan ${routeEnd.name} sudah terlihat
+                </div>
+            `;
+            routeInfo.innerHTML = html;
+            routeInfo.classList.remove('empty');
+        }
+
+        document.getElementById('startRouteBtn').addEventListener('click', () => {
+            if (routeStart && routeEnd) {
+                alert(`Rute dari ${routeStart.name} ke ${routeEnd.name} sedang aktif!`);
+            } else {
+                alert('Pilih dua lokasi terlebih dahulu');
+            }
+        });
+
+        document.getElementById('clearRouteBtn').addEventListener('click', () => {
+            routeStart = null;
+            routeEnd = null;
+            state.selectedMarkers = [];
+            routeSvg.innerHTML = '';
+            routeInfo.innerHTML = '<div class="location-info empty">Pilih dua lokasi untuk melihat rute</div>';
+            routeInfo.classList.add('empty');
+        });
+
+        // ===== RENDER PENGEMBANG =====
+        function renderDevelopers() {
+            let html = '';
+            developersDatabase.forEach(dev => {
+                html += `
+                    <div class="dev-card">
+                        <div class="dev-name">👤 ${dev.name}</div>
+                        <div class="dev-role">💼 ${dev.role}</div>
+                        <div class="dev-contact">📧 ${dev.email}</div>
+                        <div class="dev-contact">🐙 ${dev.github}</div>
+                        <div style="color: #00aaff; margin-top: 3px; font-size: 0.9em;">⭐ ${dev.specialty}</div>
+                    </div>
+                `;
+            });
+            developersList.innerHTML = html;
+        }
+
+        // ===== TAB SWITCHING =====
+        tabBtns.forEach(btn => {
+            btn.addEventListener('click', () => {
+                const tabName = btn.getAttribute('data-tab');
+                tabBtns.forEach(b => b.classList.remove('active'));
+                tabContents.forEach(c => c.classList.remove('active'));
+                btn.classList.add('active');
+                document.getElementById(tabName).classList.add('active');
+            });
+        });
+
+        // ===== ZOOM CONTROLS =====
+        document.getElementById('zoomIn').addEventListener('click', () => {
+            state.zoomLevel = Math.min(state.zoomLevel + 0.2, 3);
+            renderMarkers();
+            if (routeStart && routeEnd) drawRoute();
+        });
+
+        document.getElementById('zoomOut').addEventListener('click', () => {
+            state.zoomLevel = Math.max(state.zoomLevel - 0.2, 0.5);
+            renderMarkers();
+            if (routeStart && routeEnd) drawRoute();
+        });
+
+        // ===== MAP PAN =====
+        let isPanning = false;
+        let panStartX, panStartY;
+
+        document.querySelector('.map-canvas').addEventListener('mousedown', (e) => {
+            isPanning = true;
+            panStartX = e.clientX;
+            panStartY = e.clientY;
+        });
+
+        document.addEventListener('mousemove', (e) => {
+            if (!isPanning) return;
+            state.panOffsetX += e.clientX - panStartX;
+            state.panOffsetY += e.clientY - panStartY;
+            panStartX = e.clientX;
+            panStartY = e.clientY;
+            renderMarkers();
+            if (routeStart && routeEnd) drawRoute();
+        });
+
+        document.addEventListener('mouseup', () => {
+            isPanning = false;
+        });
+
+        // ===== UPDATE KOORDINAT =====
+        function updateUserLocation() {
+            // Simulasi lokasi pengguna
+            state.userLat = 50 + (Math.random() - 0.5) * 10;
+            state.userLon = 50 + (Math.random() - 0.5) * 10;
+            coordsDisplay.textContent = `Lat: ${state.userLat.toFixed(2)} | Lon: ${state.userLon.toFixed(2)}`;
+            renderMarkers();
+        }
+
+        function setupEventListeners() {
+            // Listening untuk perubahan peta
+            document.querySelector('.map-canvas').addEventListener('click', (e) => {
+                if (e.target === document.querySelector('.map-canvas')) {
+                    // Reset jika klik area kosong
+                    state.selectedMarkers = [];
+                }
+            });
+        }
+
+        // ===== START =====
+        init();
+    </script>
+</body>
+</html>
