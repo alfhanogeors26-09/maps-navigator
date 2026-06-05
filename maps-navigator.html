@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Navigasi Peta - Maps Navigator</title>
+    <title>Google Maps Navigator - Pencari Rute Peta</title>
     <style>
         * {
             margin: 0;
@@ -12,42 +12,14 @@
         }
 
         body {
-            font-family: 'Courier New', monospace;
-            background: linear-gradient(135deg, #0a0a0a 0%, #1a0033 100%);
-            color: #00ff00;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: #f0f0f0;
             height: 100vh;
             position: relative;
             overflow: hidden;
         }
 
-        /* Animated background scanlines */
-        @keyframes scanlines {
-            0% { background-position: 0 0; }
-            100% { background-position: 0 100px; }
-        }
-
-        body::before {
-            content: '';
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: repeating-linear-gradient(
-                0deg,
-                rgba(0, 255, 0, 0.03) 0px,
-                rgba(0, 255, 0, 0.03) 1px,
-                transparent 1px,
-                transparent 2px
-            );
-            animation: scanlines 8s linear infinite;
-            pointer-events: none;
-            z-index: 1;
-        }
-
         .container {
-            position: relative;
-            z-index: 2;
             width: 100%;
             height: 100vh;
             display: flex;
@@ -55,82 +27,44 @@
         }
 
         header {
-            background: rgba(0, 20, 0, 0.9);
-            border-bottom: 2px solid #00ff00;
+            background: linear-gradient(135deg, #1a73e8 0%, #0d47a1 100%);
+            color: white;
             padding: 15px 20px;
-            text-align: center;
-            box-shadow: 0 0 20px rgba(0, 255, 0, 0.3);
-            animation: glow 2s infinite alternate;
-        }
-
-        @keyframes glow {
-            from { text-shadow: 0 0 10px #00ff00, 0 0 20px #00aa00; }
-            to { text-shadow: 0 0 20px #00ff00, 0 0 30px #00dd00; }
+            box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+            z-index: 100;
         }
 
         h1 {
-            font-size: 1.8em;
-            color: #00ff00;
-            letter-spacing: 2px;
+            font-size: 1.5em;
             margin-bottom: 5px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
         }
 
         .subtitle {
-            color: #00aa00;
-            font-size: 0.85em;
+            font-size: 0.9em;
+            opacity: 0.9;
         }
 
         .main-content {
             display: flex;
-            gap: 15px;
-            padding: 15px;
             flex: 1;
-            overflow: hidden;
-        }
-
-        .panel {
-            background: rgba(0, 20, 0, 0.8);
-            border: 2px solid #00ff00;
-            border-radius: 5px;
-            padding: 15px;
-            box-shadow: 0 0 20px rgba(0, 255, 0, 0.3);
-            backdrop-filter: blur(10px);
-            position: relative;
-            overflow: hidden;
-            display: flex;
-            flex-direction: column;
-        }
-
-        .panel::before {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: -100%;
-            width: 100%;
-            height: 100%;
-            background: linear-gradient(90deg, transparent, rgba(0, 255, 0, 0.1), transparent);
-            animation: shimmer 3s infinite;
-            z-index: -1;
-        }
-
-        @keyframes shimmer {
-            0% { left: -100%; }
-            100% { left: 100%; }
+            gap: 0;
         }
 
         .map-panel {
             flex: 1;
             position: relative;
+            background: #e8eaed;
+            overflow: hidden;
         }
 
         .map-canvas {
             width: 100%;
             height: 100%;
-            background: rgba(0, 0, 0, 0.5);
-            border: 1px solid #00aa00;
-            border-radius: 3px;
             position: relative;
-            overflow: hidden;
+            background: linear-gradient(135deg, #e8eaed 0%, #d3d7e0 100%);
         }
 
         .map-grid {
@@ -138,117 +72,194 @@
             width: 100%;
             height: 100%;
             background-image: 
-                repeating-linear-gradient(0deg, transparent, transparent 19px, #00330033 19px, #00330033 20px),
-                repeating-linear-gradient(90deg, transparent, transparent 19px, #00330033 19px, #00330033 20px);
+                repeating-linear-gradient(0deg, transparent, transparent 49px, #d3d7e0 49px, #d3d7e0 50px),
+                repeating-linear-gradient(90deg, transparent, transparent 49px, #d3d7e0 49px, #d3d7e0 50px);
+            opacity: 0.3;
         }
 
         .map-content {
             position: absolute;
             width: 100%;
             height: 100%;
-            z-index: 2;
+            z-index: 5;
+        }
+
+        /* Peta visual */
+        .map-feature {
+            position: absolute;
+            border-radius: 2px;
+        }
+
+        .park {
+            background: #b7e4c7;
+            opacity: 0.7;
+        }
+
+        .water {
+            background: #a2d3e8;
+            opacity: 0.7;
+            border-radius: 50%;
+        }
+
+        .building {
+            background: #d1d5db;
+            border: 1px solid #9ca3af;
+        }
+
+        .road {
+            position: absolute;
+            background: #f3f3f3;
+            border: 1px solid #e0e0e0;
         }
 
         .marker {
             position: absolute;
-            width: 20px;
-            height: 20px;
-            background: #00ff00;
-            border: 2px solid #00aa00;
-            border-radius: 50%;
+            width: 32px;
+            height: 32px;
+            transform: translate(-50%, -100%);
             cursor: pointer;
-            transition: all 0.3s;
-            box-shadow: 0 0 10px #00ff00;
+            z-index: 10;
+        }
+
+        .marker-pin {
+            width: 100%;
+            height: 100%;
+            background: white;
+            border: 3px solid #1a73e8;
+            border-radius: 50% 50% 50% 0;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #1a73e8;
+            font-weight: bold;
+            font-size: 0.8em;
+        }
+
+        .marker.start .marker-pin {
+            border-color: #34a853;
+            color: #34a853;
+        }
+
+        .marker.end .marker-pin {
+            border-color: #ea4335;
+            color: #ea4335;
+        }
+
+        .marker.current .marker-pin {
+            width: 24px;
+            height: 24px;
+            background: #fbbc04;
+            border-color: #f57c00;
+            border-radius: 50%;
             animation: pulse 2s infinite;
         }
 
         @keyframes pulse {
-            0%, 100% { box-shadow: 0 0 5px #00ff00; }
-            50% { box-shadow: 0 0 20px #00ff00; }
-        }
-
-        .marker:hover {
-            width: 28px;
-            height: 28px;
-            box-shadow: 0 0 30px #00ff00;
-        }
-
-        .marker.current {
-            background: #ffaa00;
-            border-color: #ff7700;
-            animation: pulse-current 1s infinite;
-        }
-
-        @keyframes pulse-current {
-            0%, 100% { box-shadow: 0 0 10px #ffaa00; }
-            50% { box-shadow: 0 0 25px #ffaa00; }
-        }
-
-        .marker-label {
-            position: absolute;
-            top: -25px;
-            left: 50%;
-            transform: translateX(-50%);
-            background: rgba(0, 0, 0, 0.9);
-            color: #00ff00;
-            padding: 3px 8px;
-            border-radius: 3px;
-            font-size: 0.7em;
-            white-space: nowrap;
-            border: 1px solid #00aa00;
-            opacity: 0;
-            pointer-events: none;
-            transition: opacity 0.3s;
-        }
-
-        .marker:hover .marker-label {
-            opacity: 1;
+            0%, 100% { box-shadow: 0 0 0 0 rgba(251, 188, 4, 0.7); }
+            50% { box-shadow: 0 0 0 8px rgba(251, 188, 4, 0); }
         }
 
         .route-line {
             position: absolute;
-            stroke: #00ff00;
-            stroke-width: 2;
-            fill: none;
-            opacity: 0.7;
+            background: linear-gradient(90deg, #1a73e8, #34a853);
+            height: 4px;
+            opacity: 0.8;
+            z-index: 6;
+        }
+
+        .zoom-controls {
+            position: absolute;
+            right: 15px;
+            top: 15px;
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+            z-index: 20;
+        }
+
+        .zoom-btn {
+            width: 40px;
+            height: 40px;
+            background: white;
+            border: 1px solid #dadce0;
+            border-radius: 2px;
+            cursor: pointer;
+            font-weight: bold;
+            color: #202124;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+            transition: all 0.2s;
+        }
+
+        .zoom-btn:hover {
+            background: #f8f9fa;
+            box-shadow: 0 2px 12px rgba(0,0,0,0.2);
+        }
+
+        .map-controls {
+            position: absolute;
+            bottom: 15px;
+            left: 15px;
+            background: white;
+            border-radius: 2px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+            padding: 10px 15px;
+            z-index: 20;
+            font-size: 0.85em;
+            color: #202124;
         }
 
         .info-panel {
-            width: 350px;
+            width: 380px;
+            background: white;
+            border-left: 1px solid #dadce0;
             display: flex;
             flex-direction: column;
-            gap: 15px;
+            box-shadow: -2px 0 8px rgba(0,0,0,0.1);
+            z-index: 30;
+        }
+
+        .panel-header {
+            background: linear-gradient(135deg, #1a73e8 0%, #0d47a1 100%);
+            color: white;
+            padding: 15px;
+            border-bottom: 1px solid #dadce0;
         }
 
         .panel-title {
             font-size: 1.1em;
-            color: #00ff00;
-            text-transform: uppercase;
-            letter-spacing: 2px;
-            border-bottom: 2px solid #00aa00;
-            padding-bottom: 8px;
-            margin-bottom: 10px;
+            font-weight: 600;
+            margin-bottom: 3px;
+        }
+
+        .panel-subtitle {
+            font-size: 0.85em;
+            opacity: 0.9;
+        }
+
+        .panel-content {
+            flex: 1;
+            overflow-y: auto;
+            padding: 15px;
         }
 
         .search-box {
-            position: relative;
+            margin-bottom: 15px;
         }
 
         .search-box input {
             width: 100%;
-            padding: 10px;
-            background: rgba(0, 20, 0, 0.8);
-            border: 1px solid #00aa00;
-            color: #00ff00;
-            border-radius: 3px;
-            font-family: 'Courier New', monospace;
-            font-size: 0.85em;
+            padding: 12px;
+            border: 1px solid #dadce0;
+            border-radius: 4px;
+            font-size: 0.95em;
+            transition: all 0.2s;
         }
 
         .search-box input:focus {
             outline: none;
-            border-color: #00ff00;
-            box-shadow: 0 0 10px rgba(0, 255, 0, 0.3);
+            border-color: #1a73e8;
+            box-shadow: 0 0 0 3px rgba(26, 115, 232, 0.1);
         }
 
         .search-results {
@@ -256,11 +267,10 @@
             top: 100%;
             left: 0;
             right: 0;
-            background: rgba(0, 0, 0, 0.9);
-            border: 1px solid #00aa00;
+            background: white;
+            border: 1px solid #dadce0;
             border-top: none;
-            border-radius: 0 0 3px 3px;
-            max-height: 250px;
+            max-height: 300px;
             overflow-y: auto;
             z-index: 100;
             display: none;
@@ -271,693 +281,838 @@
         }
 
         .search-item {
-            padding: 8px 10px;
-            color: #00ff00;
-            border-bottom: 1px solid rgba(0, 255, 0, 0.2);
+            padding: 12px;
+            border-bottom: 1px solid #f0f0f0;
             cursor: pointer;
-            transition: background 0.3s;
-            font-size: 0.8em;
+            transition: background 0.2s;
         }
 
         .search-item:hover {
-            background: rgba(0, 255, 0, 0.2);
+            background: #f8f9fa;
         }
 
-        .location-info {
-            background: rgba(0, 40, 0, 0.6);
-            border: 1px solid #00aa00;
-            border-radius: 3px;
+        .location-box {
+            background: #f8f9fa;
+            border-radius: 4px;
             padding: 12px;
-            font-size: 0.8em;
-            flex-grow: 1;
-            overflow-y: auto;
-        }
-
-        .location-info.empty {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            color: #00aa00;
-            text-align: center;
-        }
-
-        .location-detail {
             margin-bottom: 12px;
-            padding-bottom: 12px;
-            border-bottom: 1px solid rgba(0, 255, 0, 0.2);
         }
 
-        .location-detail:last-child {
-            border-bottom: none;
-            margin-bottom: 0;
-            padding-bottom: 0;
+        .location-label {
+            font-size: 0.75em;
+            color: #5f6368;
+            font-weight: 600;
+            text-transform: uppercase;
+            margin-bottom: 3px;
         }
 
         .location-name {
-            color: #00ff00;
-            font-weight: bold;
-            margin-bottom: 3px;
+            font-size: 0.95em;
+            color: #202124;
+            font-weight: 500;
+        }
+
+        .route-info {
+            background: #f8f9fa;
+            border-radius: 4px;
+            padding: 15px;
+            margin-bottom: 15px;
+            border-left: 4px solid #34a853;
+        }
+
+        .route-stat {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 8px;
             font-size: 0.95em;
         }
 
-        .location-address {
-            color: #00aa00;
-            margin-bottom: 5px;
+        .route-stat-label {
+            color: #5f6368;
         }
 
-        .location-rating {
-            display: inline-block;
-            color: #ffaa00;
-            margin-bottom: 5px;
+        .route-stat-value {
+            font-weight: 600;
+            color: #202124;
         }
 
-        .location-category {
-            background: rgba(0, 255, 0, 0.1);
-            color: #00ff00;
-            padding: 2px 6px;
-            border-radius: 2px;
-            font-size: 0.75em;
-            display: inline-block;
-            margin-right: 5px;
-            margin-bottom: 5px;
+        .route-steps {
+            background: white;
+            border: 1px solid #dadce0;
+            border-radius: 4px;
+            overflow: hidden;
         }
 
-        .location-distance {
-            color: #00aaff;
+        .step {
+            padding: 12px 15px;
+            border-bottom: 1px solid #f0f0f0;
+            display: flex;
+            gap: 12px;
+            font-size: 0.9em;
+        }
+
+        .step:last-child {
+            border-bottom: none;
+        }
+
+        .step-icon {
+            width: 24px;
+            height: 24px;
+            background: #e8eaed;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+            font-size: 0.8em;
+        }
+
+        .step-content {
+            flex: 1;
+        }
+
+        .step-title {
+            color: #202124;
+            margin-bottom: 2px;
+        }
+
+        .step-distance {
+            color: #5f6368;
             font-size: 0.85em;
         }
 
         .button-group {
             display: flex;
-            gap: 8px;
-            flex-wrap: wrap;
+            gap: 10px;
+            margin-bottom: 15px;
         }
 
         button {
             flex: 1;
-            min-width: 80px;
-            padding: 10px;
-            background: linear-gradient(135deg, #003300 0%, #006600 100%);
-            color: #00ff00;
-            border: 2px solid #00ff00;
-            border-radius: 3px;
+            padding: 12px;
+            background: #1a73e8;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            font-weight: 600;
             cursor: pointer;
-            font-family: 'Courier New', monospace;
-            font-weight: bold;
-            text-transform: uppercase;
-            letter-spacing: 1px;
-            transition: all 0.3s ease;
-            font-size: 0.75em;
-            text-shadow: 0 0 5px #00ff00;
+            transition: all 0.2s;
+            font-size: 0.9em;
         }
 
         button:hover {
-            background: linear-gradient(135deg, #006600 0%, #00aa00 100%);
-            box-shadow: 0 0 15px rgba(0, 255, 0, 0.6);
-            transform: translateY(-2px);
+            background: #1665c0;
+            box-shadow: 0 2px 8px rgba(26, 115, 232, 0.3);
         }
 
         button:active {
-            transform: translateY(0);
+            background: #0d47a1;
         }
 
-        button:disabled {
-            opacity: 0.5;
-            cursor: not-allowed;
+        .btn-secondary {
+            background: #dadce0;
+            color: #202124;
         }
 
-        .zoom-controls {
-            position: absolute;
-            right: 15px;
-            top: 15px;
-            display: flex;
-            flex-direction: column;
-            gap: 5px;
-            z-index: 10;
+        .btn-secondary:hover {
+            background: #cfd0d5;
         }
 
-        .zoom-btn {
-            width: 35px;
-            height: 35px;
-            padding: 0;
-            min-width: auto;
-            font-size: 1.2em;
+        .empty-state {
+            text-align: center;
+            padding: 40px 20px;
+            color: #5f6368;
         }
 
-        .coords-display {
-            position: absolute;
-            bottom: 10px;
-            left: 10px;
-            background: rgba(0, 0, 0, 0.7);
-            border: 1px solid #00aa00;
-            padding: 5px 10px;
-            border-radius: 3px;
-            font-size: 0.7em;
-            color: #00ff00;
-            z-index: 10;
-        }
-
-        .tab-buttons {
-            display: flex;
-            gap: 5px;
+        .empty-state-icon {
+            font-size: 3em;
             margin-bottom: 10px;
+        }
+
+        .tabs {
+            display: flex;
+            border-bottom: 1px solid #dadce0;
+            margin-bottom: 15px;
         }
 
         .tab-btn {
             flex: 1;
-            padding: 8px;
-            font-size: 0.7em;
-            min-width: 0;
+            padding: 12px;
+            background: none;
+            border: none;
+            color: #5f6368;
+            font-weight: 500;
+            cursor: pointer;
+            border-bottom: 3px solid transparent;
+            transition: all 0.2s;
         }
 
         .tab-btn.active {
-            background: linear-gradient(135deg, #006600 0%, #00aa00 100%);
-            box-shadow: 0 0 10px rgba(0, 255, 0, 0.6);
+            color: #1a73e8;
+            border-bottom-color: #1a73e8;
         }
 
         .tab-content {
             display: none;
-            flex: 1;
-            overflow-y: auto;
         }
 
         .tab-content.active {
             display: block;
         }
 
-        .route-info {
-            background: rgba(0, 40, 0, 0.6);
-            border: 1px solid #00aa00;
-            border-radius: 3px;
-            padding: 10px;
+        .footer {
+            background: #f8f9fa;
+            border-top: 1px solid #dadce0;
+            padding: 10px 15px;
             font-size: 0.8em;
-            margin-bottom: 10px;
+            color: #5f6368;
+            text-align: center;
         }
 
-        .route-step {
-            padding: 6px 0;
-            color: #00ff00;
-            border-bottom: 1px solid rgba(0, 255, 0, 0.2);
+        .traffic-legend {
+            display: flex;
+            gap: 15px;
+            flex-wrap: wrap;
+            margin-top: 10px;
+            padding-top: 10px;
+            border-top: 1px solid #dadce0;
             font-size: 0.85em;
         }
 
-        .route-step:last-child {
-            border-bottom: none;
+        .traffic-item {
+            display: flex;
+            align-items: center;
+            gap: 5px;
         }
 
-        .developer-grid {
-            display: grid;
-            grid-template-columns: 1fr;
-            gap: 8px;
-            font-size: 0.75em;
+        .traffic-color {
+            width: 20px;
+            height: 4px;
+            border-radius: 2px;
         }
 
-        .dev-card {
-            background: rgba(0, 40, 0, 0.6);
-            border: 1px solid #00aa00;
-            border-radius: 3px;
-            padding: 8px;
-        }
-
-        .dev-name {
-            color: #00ff00;
-            font-weight: bold;
-            margin-bottom: 2px;
-        }
-
-        .dev-role {
-            color: #00aaff;
-            margin-bottom: 3px;
-        }
-
-        .dev-contact {
-            color: #00aa00;
-            word-break: break-all;
-        }
-
-        .status-indicator {
-            display: inline-block;
-            width: 6px;
-            height: 6px;
-            background: #00ff00;
-            border-radius: 50%;
-            margin-right: 6px;
-            animation: pulse-indicator 1s infinite;
-        }
-
-        @keyframes pulse-indicator {
-            0%, 100% { opacity: 1; }
-            50% { opacity: 0.5; }
-        }
-
-        .footer {
-            background: rgba(0, 20, 0, 0.9);
-            border-top: 2px solid #00ff00;
-            padding: 10px 20px;
-            text-align: center;
-            color: #00aa00;
-            font-size: 0.75em;
-        }
-
-        @media (max-width: 1200px) {
+        @media (max-width: 1000px) {
             .main-content {
                 flex-direction: column;
             }
 
             .info-panel {
                 width: 100%;
-                max-height: 300px;
+                border-left: none;
+                border-top: 1px solid #dadce0;
+                max-height: 40%;
             }
+
+            .map-panel {
+                flex: 1;
+            }
+        }
+
+        .loading {
+            display: none;
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: white;
+            padding: 20px;
+            border-radius: 4px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+            z-index: 50;
+            text-align: center;
+        }
+
+        .loading.active {
+            display: block;
+        }
+
+        .spinner {
+            border: 3px solid #f0f0f0;
+            border-top: 3px solid #1a73e8;
+            border-radius: 50%;
+            width: 30px;
+            height: 30px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 10px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
         }
     </style>
 </head>
 <body>
     <div class="container">
         <header>
-            <h1>🗺️ NAVIGASI PETA</h1>
-            <p class="subtitle">Maps Navigator - Penunjuk Arah Interaktif</p>
+            <h1>🗺️ Google Maps Navigator</h1>
+            <p class="subtitle">Pencari Rute dan Navigasi Peta Interaktif</p>
         </header>
 
         <div class="main-content">
             <!-- Map Panel -->
-            <div class="panel map-panel">
+            <div class="map-panel">
                 <div class="map-canvas">
                     <div class="map-grid"></div>
-                    <svg class="route-line" id="routeSvg"></svg>
                     <div class="map-content" id="mapContent"></div>
                     <div class="zoom-controls">
-                        <button class="zoom-btn" id="zoomIn" title="Perbesar">+</button>
-                        <button class="zoom-btn" id="zoomOut" title="Perkecil">−</button>
+                        <button class="zoom-btn" id="zoomIn">+</button>
+                        <button class="zoom-btn" id="zoomOut">−</button>
                     </div>
-                    <div class="coords-display" id="coordsDisplay">Lat: 0.00 | Lon: 0.00</div>
+                    <div class="map-controls" id="mapControls">
+                        <div id="coordsDisplay">Lat: 0.00 | Lon: 0.00</div>
+                    </div>
+                    <div class="loading" id="loading">
+                        <div class="spinner"></div>
+                        <div>Mencari rute terbaik...</div>
+                    </div>
                 </div>
             </div>
 
             <!-- Info Panel -->
             <div class="info-panel">
-                <!-- Search Box -->
-                <div class="search-box">
-                    <input type="text" id="searchInput" placeholder="🔍 Cari lokasi...">
-                    <div class="search-results" id="searchResults"></div>
+                <div class="panel-header">
+                    <div class="panel-title">🔍 Cari Rute</div>
+                    <div class="panel-subtitle">Masukkan lokasi awal dan tujuan</div>
                 </div>
 
-                <!-- Tabs -->
-                <div class="tab-buttons">
-                    <button class="tab-btn active" data-tab="locations">Lokasi</button>
-                    <button class="tab-btn" data-tab="route">Rute</button>
-                    <button class="tab-btn" data-tab="developers">Pengembang</button>
-                </div>
+                <div class="panel-content">
+                    <div class="tabs">
+                        <button class="tab-btn active" data-tab="route">Rute</button>
+                        <button class="tab-btn" data-tab="places">Tempat</button>
+                        <button class="tab-btn" data-tab="info">Info</button>
+                    </div>
 
-                <!-- Locations Tab -->
-                <div id="locations" class="tab-content active">
-                    <div class="location-info empty" id="locationInfo">
-                        Klik marker di peta untuk melihat detail lokasi
+                    <!-- Route Tab -->
+                    <div id="route" class="tab-content active">
+                        <div class="search-box" style="position: relative;">
+                            <div class="location-label">📍 Lokasi Awal</div>
+                            <input type="text" id="startInput" placeholder="Cari lokasi awal..." autocomplete="off">
+                            <div class="search-results" id="startResults"></div>
+                        </div>
+
+                        <div class="search-box" style="position: relative;">
+                            <div class="location-label">📍 Lokasi Tujuan</div>
+                            <input type="text" id="endInput" placeholder="Cari lokasi tujuan..." autocomplete="off">
+                            <div class="search-results" id="endResults"></div>
+                        </div>
+
+                        <div class="button-group">
+                            <button id="findRouteBtn">🚗 Cari Rute</button>
+                            <button class="btn-secondary" id="clearRouteBtn">Hapus</button>
+                        </div>
+
+                        <div id="routeContainer" class="empty-state">
+                            <div class="empty-state-icon">🛣️</div>
+                            <div>Cari rute untuk melihat petunjuk arah</div>
+                        </div>
+                    </div>
+
+                    <!-- Places Tab -->
+                    <div id="places" class="tab-content">
+                        <div class="search-box">
+                            <input type="text" id="placeSearchInput" placeholder="Cari tempat (restoran, toko, dll)...">
+                        </div>
+                        <div id="placesContainer"></div>
+                    </div>
+
+                    <!-- Info Tab -->
+                    <div id="info" class="tab-content">
+                        <div style="color: #5f6368; line-height: 1.6; font-size: 0.9em;">
+                            <p style="margin-bottom: 10px;"><strong>Fitur Aplikasi:</strong></p>
+                            <ul style="margin-left: 20px; margin-bottom: 10px;">
+                                <li>🚗 Pencarian rute dengan jarak & waktu tempuh</li>
+                                <li>📍 Database 30+ lokasi di peta</li>
+                                <li>🚨 Simulasi kondisi lalu lintas</li>
+                                <li>🧭 Petunjuk arah detail turn-by-turn</li>
+                                <li>💾 Simpan lokasi favorit</li>
+                            </ul>
+                            <p style="margin-bottom: 10px;"><strong>Cara Menggunakan:</strong></p>
+                            <ol style="margin-left: 20px;">
+                                <li>Pilih lokasi awal dan tujuan</li>
+                                <li>Klik "Cari Rute"</li>
+                                <li>Lihat petunjuk arah di panel samping</li>
+                                <li>Klik lokasi di peta untuk detail</li>
+                            </ol>
+                        </div>
                     </div>
                 </div>
 
-                <!-- Route Tab -->
-                <div id="route" class="tab-content">
-                    <div id="routeInfo" class="location-info empty">
-                        Pilih dua lokasi untuk melihat rute
-                    </div>
-                    <div class="button-group">
-                        <button id="startRouteBtn">Mulai Rute</button>
-                        <button id="clearRouteBtn">Hapus Rute</button>
-                    </div>
-                </div>
-
-                <!-- Developers Tab -->
-                <div id="developers" class="tab-content">
-                    <div class="developer-grid" id="developersList"></div>
+                <div class="footer">
+                    💾 Data disimpan otomatis | Versi 2.0
                 </div>
             </div>
-        </div>
-
-        <div class="footer">
-            <div>━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━</div>
-            <div><span class="status-indicator"></span>Aplikasi Navigasi Peta v1.0 | © 2026</div>
-            <div>━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━</div>
         </div>
     </div>
 
     <script>
         // ===== DATABASE LOKASI =====
         const locationsDatabase = [
-            // Restoran
-            { id: 1, name: 'Rumah Makan Berkah', category: 'Restoran', address: 'Jl. Merdeka No. 45', lat: 50, lon: 50, rating: 4.7, distance: 0.5 },
-            { id: 2, name: 'Warung Nasi Kuning', category: 'Restoran', address: 'Jl. Sudirman No. 23', lat: 80, lon: 40, rating: 4.5, distance: 1.2 },
-            { id: 3, name: 'Kafe Bersama', category: 'Kafe', address: 'Jl. Ahmad Yani No. 12', lat: 60, lon: 70, rating: 4.6, distance: 0.8 },
-            { id: 4, name: 'Sushi Deluxe', category: 'Restoran', address: 'Jl. Gatot Subroto No. 99', lat: 40, lon: 60, rating: 4.8, distance: 1.5 },
-            { id: 5, name: 'Bakso Urat Legendaris', category: 'Restoran', address: 'Jl. Diponegoro No. 77', lat: 70, lon: 80, rating: 4.4, distance: 0.9 },
+            // Pusat kota
+            { id: 1, name: 'Stasiun Pusat Kota', category: 'Transportasi', x: 50, y: 50, rating: 4.6 },
+            { id: 2, name: 'Bandara Internasional', category: 'Transportasi', x: 150, y: 120, rating: 4.4 },
+            { id: 3, name: 'Mal Pusat Kota', category: 'Belanja', x: 70, y: 60, rating: 4.5 },
+            { id: 4, name: 'Rumah Sakit Sentral', category: 'Kesehatan', x: 100, y: 80, rating: 4.7 },
+            { id: 5, name: 'Gedung Pemerintah', category: 'Kantor', x: 60, y: 120, rating: 4.2 },
             
-            // Toko
-            { id: 6, name: 'Supermarket Jaya', category: 'Toko', address: 'Jl. Permata No. 15', lat: 55, lon: 45, rating: 4.3, distance: 0.6 },
-            { id: 7, name: 'Toko Elektronik Pusat', category: 'Toko', address: 'Jl. Teuku Umar No. 34', lat: 65, lon: 55, rating: 4.5, distance: 1.1 },
-            { id: 8, name: 'Butik Fashion Cantik', category: 'Toko', address: 'Jl. Imam Bonjol No. 22', lat: 75, lon: 65, rating: 4.6, distance: 1.3 },
-            { id: 9, name: 'Apotek 24 Jam', category: 'Apotek', address: 'Jl. Cokroaminoto No. 11', lat: 45, lon: 75, rating: 4.7, distance: 0.4 },
-            { id: 10, name: 'Toko Buku Gramedia', category: 'Toko', address: 'Jl. KH. Agus Salim No. 56', lat: 85, lon: 50, rating: 4.4, distance: 1.8 },
-
-            // Kantor & Layanan
-            { id: 11, name: 'Bank Nasional', category: 'Bank', address: 'Jl. Yani No. 100', lat: 50, lon: 60, rating: 4.6, distance: 0.7 },
-            { id: 12, name: 'Kantor Polisi', category: 'Layanan', address: 'Jl. Letnan Jendral S. Parman No. 88', lat: 30, lon: 70, rating: 4.2, distance: 1.4 },
-            { id: 13, name: 'Rumah Sakit Mitra', category: 'Rumah Sakit', address: 'Jl. Veteran No. 42', lat: 60, lon: 30, rating: 4.8, distance: 1.6 },
-            { id: 14, name: 'Puskesmas Sejahtera', category: 'Kesehatan', address: 'Jl. Pemuda No. 19', lat: 70, lon: 40, rating: 4.5, distance: 1.0 },
-            { id: 15, name: 'Kantor Pajak', category: 'Kantor', address: 'Jl. P. Diponegoro No. 65', lat: 55, lon: 85, rating: 4.1, distance: 2.0 },
-
-            // Rekreasi
-            { id: 16, name: 'Taman Kota Indah', category: 'Taman', address: 'Jl. Wijaya Kusuma No. 33', lat: 40, lon: 40, rating: 4.7, distance: 0.9 },
-            { id: 17, name: 'Bioskop Grand Cinema', category: 'Hiburan', address: 'Jl. Panglima Sudirman No. 27', lat: 75, lon: 75, rating: 4.6, distance: 1.7 },
-            { id: 18, name: 'Kolam Renang Permata', category: 'Olahraga', address: 'Jl. Merpati No. 8', lat: 85, lon: 85, rating: 4.4, distance: 2.1 },
-            { id: 19, name: 'Gym Fitness Plus', category: 'Olahraga', address: 'Jl. Raden Ajeng Kartini No. 51', lat: 35, lon: 55, rating: 4.5, distance: 1.2 },
-            { id: 20, name: 'Museum Sejarah Kota', category: 'Wisata', address: 'Jl. Gajah Mada No. 48', lat: 50, lon: 20, rating: 4.8, distance: 2.5 },
-
+            // Restoran
+            { id: 6, name: 'Restoran Italia Mewah', category: 'Restoran', x: 80, y: 70, rating: 4.8 },
+            { id: 7, name: 'Warung Soto Ayam', category: 'Restoran', x: 120, y: 90, rating: 4.6 },
+            { id: 8, name: 'Kafe Kopi Premium', category: 'Kafe', x: 40, y: 40, rating: 4.7 },
+            { id: 9, name: 'Seafood Restaurant', category: 'Restoran', x: 140, y: 100, rating: 4.9 },
+            { id: 10, name: 'Bakso Legendaris', category: 'Restoran', x: 30, y: 80, rating: 4.5 },
+            
+            // Toko & Belanja
+            { id: 11, name: 'Supermarket Mega', category: 'Toko', x: 110, y: 50, rating: 4.4 },
+            { id: 12, name: 'Toko Elektronik Elite', category: 'Toko', x: 90, y: 110, rating: 4.3 },
+            { id: 13, name: 'Butik Fashion Modern', category: 'Toko', x: 60, y: 30, rating: 4.6 },
+            { id: 14, name: 'Apotek 24 Jam', category: 'Apotek', x: 75, y: 90, rating: 4.5 },
+            { id: 15, name: 'Toko Buku & Alat Tulis', category: 'Toko', x: 45, y: 110, rating: 4.2 },
+            
+            // Hiburan & Wisata
+            { id: 16, name: 'Taman Hiburan Keluarga', category: 'Wisata', x: 160, y: 140, rating: 4.7 },
+            { id: 17, name: 'Bioskop Grand Cinema', category: 'Hiburan', x: 65, y: 65, rating: 4.6 },
+            { id: 18, name: 'Museum Sejarah Kota', category: 'Wisata', x: 35, y: 130, rating: 4.5 },
+            { id: 19, name: 'Taman Kota Indah', category: 'Taman', x: 20, y: 60, rating: 4.8 },
+            { id: 20, name: 'Kolam Renang Publik', category: 'Olahraga', x: 130, y: 70, rating: 4.4 },
+            
             // Pendidikan
-            { id: 21, name: 'SD Negeri 1 Maju', category: 'Pendidikan', address: 'Jl. Proklamasi No. 14', lat: 60, lon: 50, rating: 4.3, distance: 0.8 },
-            { id: 22, name: 'SMP Bina Bangsa', category: 'Pendidikan', address: 'Jl. Pesantren No. 26', lat: 45, lon: 85, rating: 4.4, distance: 1.9 },
-            { id: 23, name: 'SMA Unggul Jaya', category: 'Pendidikan', address: 'Jl. Sultan Hasanuddin No. 73', lat: 80, lon: 65, rating: 4.6, distance: 1.5 },
-            { id: 24, name: 'Universitas Terbuka', category: 'Pendidikan', address: 'Jl. Gatot Subroto No. 246', lat: 30, lon: 30, rating: 4.7, distance: 2.2 },
-            { id: 25, name: 'Sekolah Bahasa Internasional', category: 'Pendidikan', address: 'Jl. Pendidikan No. 99', lat: 75, lon: 25, rating: 4.5, distance: 2.6 }
+            { id: 21, name: 'Universitas Negeri', category: 'Pendidikan', x: 100, y: 30, rating: 4.6 },
+            { id: 22, name: 'Sekolah Internasional', category: 'Pendidikan', x: 150, y: 50, rating: 4.7 },
+            { id: 23, name: 'Perpustakaan Umum', category: 'Pendidikan', x: 55, y: 45, rating: 4.5 },
+            
+            // Bank & Keuangan
+            { id: 24, name: 'Bank Nasional Cabang Utama', category: 'Bank', x: 75, y: 55, rating: 4.5 },
+            { id: 25, name: 'ATM 24 Jam Blok A', category: 'Bank', x: 40, y: 70, rating: 4.3 },
+            
+            // Layanan Umum
+            { id: 26, name: 'Kantor Polisi', category: 'Layanan', x: 120, y: 140, rating: 4.2 },
+            { id: 27, name: 'Pemadam Kebakaran', category: 'Layanan', x: 170, y: 80, rating: 4.6 },
+            { id: 28, name: 'Kantor Lurah', category: 'Kantor', x: 50, y: 150, rating: 4.0 },
+            { id: 29, name: 'Sekolah Dasar Maju', category: 'Pendidikan', x: 25, y: 100, rating: 4.4 },
+            { id: 30, name: 'Hotel Bintang Lima', category: 'Hotel', x: 140, y: 60, rating: 4.9 }
         ];
 
-        // ===== DATABASE PENGEMBANG =====
-        const developersDatabase = [
-            {
-                id: 1,
-                name: 'Ahmad Rizki Harahap',
-                role: 'Lead Developer',
-                email: 'ahmad.rizki@mapsnavigator.dev',
-                github: 'github.com/ahmadrizki',
-                specialty: 'Frontend & Map Integration'
-            },
-            {
-                id: 2,
-                name: 'Siti Nurhaliza',
-                role: 'Backend Developer',
-                email: 'siti.nurhaliza@mapsnavigator.dev',
-                github: 'github.com/sitinurhaliza',
-                specialty: 'Database & API'
-            },
-            {
-                id: 3,
-                name: 'Budi Santoso',
-                role: 'Full Stack Developer',
-                email: 'budi.santoso@mapsnavigator.dev',
-                github: 'github.com/budisantoso',
-                specialty: 'Route Algorithm'
-            },
-            {
-                id: 4,
-                name: 'Eka Putri Wijaya',
-                role: 'UI/UX Designer',
-                email: 'eka.putri@mapsnavigator.dev',
-                github: 'github.com/ekaputri',
-                specialty: 'Interface Design'
-            },
-            {
-                id: 5,
-                name: 'Rinto Harahap',
-                role: 'DevOps Engineer',
-                email: 'rinto.harahap@mapsnavigator.dev',
-                github: 'github.com/rintoharahap',
-                specialty: 'Infrastructure & Deployment'
-            },
-            {
-                id: 6,
-                name: 'Dewi Lestari',
-                role: 'QA Tester',
-                email: 'dewi.lestari@mapsnavigator.dev',
-                github: 'github.com/dewilestari',
-                specialty: 'Testing & Documentation'
-            }
-        ];
-
-        // ===== STATE MANAJEMEN =====
+        // ===== STATE =====
         let state = {
             zoomLevel: 1,
-            selectedMarkers: [],
-            currentLocation: null,
+            panX: 0,
+            panY: 0,
+            startLocation: null,
+            endLocation: null,
+            currentRoute: null,
             userLat: 50,
-            userLon: 50,
-            panOffsetX: 0,
-            panOffsetY: 0
+            userLon: 50
         };
 
         // ===== DOM ELEMENTS =====
         const mapContent = document.getElementById('mapContent');
-        const searchInput = document.getElementById('searchInput');
-        const searchResults = document.getElementById('searchResults');
-        const locationInfo = document.getElementById('locationInfo');
-        const routeInfo = document.getElementById('routeInfo');
+        const mapCanvas = document.querySelector('.map-canvas');
+        const coordsDisplay = document.getElementById('coordsDisplay');
+        const startInput = document.getElementById('startInput');
+        const endInput = document.getElementById('endInput');
+        const startResults = document.getElementById('startResults');
+        const endResults = document.getElementById('endResults');
+        const findRouteBtn = document.getElementById('findRouteBtn');
+        const clearRouteBtn = document.getElementById('clearRouteBtn');
+        const routeContainer = document.getElementById('routeContainer');
+        const placeSearchInput = document.getElementById('placeSearchInput');
+        const placesContainer = document.getElementById('placesContainer');
         const tabBtns = document.querySelectorAll('.tab-btn');
         const tabContents = document.querySelectorAll('.tab-content');
-        const coordsDisplay = document.getElementById('coordsDisplay');
-        const routeSvg = document.getElementById('routeSvg');
-        const developersList = document.getElementById('developersList');
+        const loading = document.getElementById('loading');
 
         // ===== INISIALISASI =====
         function init() {
-            renderMarkers();
-            renderDevelopers();
+            renderMap();
             setupEventListeners();
-            updateUserLocation();
         }
 
-        // ===== RENDER MARKERS =====
-        function renderMarkers() {
+        // ===== RENDER PETA =====
+        function renderMap() {
             mapContent.innerHTML = '';
+
+            // Render jalan & area
+            drawMapFeatures();
+
+            // Render marker lokasi
             locationsDatabase.forEach(location => {
-                const marker = document.createElement('div');
-                marker.className = 'marker';
-                const x = (location.lon * state.zoomLevel) + state.panOffsetX;
-                const y = (location.lat * state.zoomLevel) + state.panOffsetY;
-                marker.style.left = x + 'px';
-                marker.style.top = y + 'px';
-                
-                marker.innerHTML = `<div class="marker-label">${location.name}</div>`;
-                
-                marker.addEventListener('click', () => showLocationInfo(location));
+                const marker = createMarker(location, false);
                 mapContent.appendChild(marker);
             });
 
             // Render user location
-            const userMarker = document.createElement('div');
-            userMarker.className = 'marker current';
-            userMarker.style.left = (state.userLon * state.zoomLevel + state.panOffsetX) + 'px';
-            userMarker.style.top = (state.userLat * state.zoomLevel + state.panOffsetY) + 'px';
-            userMarker.innerHTML = '<div class="marker-label">Posisi Anda</div>';
+            const userMarker = createMarker({
+                id: 0,
+                name: 'Lokasi Anda',
+                x: state.userLon,
+                y: state.userLat
+            }, true);
             mapContent.appendChild(userMarker);
+
+            updateCoords();
         }
 
-        // ===== TAMPILKAN INFO LOKASI =====
-        function showLocationInfo(location) {
-            state.currentLocation = location;
-            let html = `
-                <div class="location-detail">
-                    <div class="location-name">📍 ${location.name}</div>
-                    <div class="location-address">📮 ${location.address}</div>
-                    <div class="location-rating">⭐ ${location.rating}/5.0 Rating</div><br>
-                    <div class="location-category">${location.category}</div>
-                    <div class="location-distance">📏 ${location.distance} km dari Anda</div>
-                </div>
-            `;
-            locationInfo.innerHTML = html;
-            locationInfo.classList.remove('empty');
-            
-            // Highlight marker
-            selectMarkerForRoute(location, true);
+        // ===== GAMBAR FITUR PETA =====
+        function drawMapFeatures() {
+            // Taman (hijau)
+            const parks = [
+                { x: 10, y: 50, w: 30, h: 25 },
+                { x: 140, y: 120, w: 40, h: 35 }
+            ];
+            parks.forEach(p => {
+                const el = document.createElement('div');
+                el.className = 'map-feature park';
+                el.style.left = p.x + 'px';
+                el.style.top = p.y + 'px';
+                el.style.width = p.w + 'px';
+                el.style.height = p.h + 'px';
+                mapContent.appendChild(el);
+            });
+
+            // Air (biru)
+            const waters = [
+                { x: 160, y: 30, r: 25 },
+                { x: 25, y: 140, r: 20 }
+            ];
+            waters.forEach(w => {
+                const el = document.createElement('div');
+                el.className = 'map-feature water';
+                el.style.left = (w.x - w.r) + 'px';
+                el.style.top = (w.y - w.r) + 'px';
+                el.style.width = (w.r * 2) + 'px';
+                el.style.height = (w.r * 2) + 'px';
+                mapContent.appendChild(el);
+            });
+
+            // Bangunan (abu-abu)
+            const buildings = [
+                { x: 45, y: 35, w: 15, h: 15 },
+                { x: 95, y: 55, w: 20, h: 18 },
+                { x: 130, y: 40, w: 18, h: 20 },
+                { x: 55, y: 100, w: 15, h: 12 }
+            ];
+            buildings.forEach(b => {
+                const el = document.createElement('div');
+                el.className = 'map-feature building';
+                el.style.left = b.x + 'px';
+                el.style.top = b.y + 'px';
+                el.style.width = b.w + 'px';
+                el.style.height = b.h + 'px';
+                mapContent.appendChild(el);
+            });
+        }
+
+        // ===== BUAT MARKER =====
+        function createMarker(location, isCurrent = false) {
+            const marker = document.createElement('div');
+            marker.className = `marker ${isCurrent ? 'current' : ''}`;
+            if (state.startLocation?.id === location.id) marker.classList.add('start');
+            if (state.endLocation?.id === location.id) marker.classList.add('end');
+
+            const x = location.x * 20 + 10;
+            const y = location.y * 20 + 10;
+            marker.style.left = x + 'px';
+            marker.style.top = y + 'px';
+
+            const pin = document.createElement('div');
+            pin.className = 'marker-pin';
+            pin.textContent = isCurrent ? '📍' : (location.id % 5 === 0 ? '🏢' : '📍');
+            pin.title = location.name;
+
+            marker.appendChild(pin);
+            marker.addEventListener('click', () => {
+                if (!isCurrent) selectLocation(location);
+            });
+
+            return marker;
+        }
+
+        // ===== SETUP EVENT LISTENERS =====
+        function setupEventListeners() {
+            // Zoom
+            document.getElementById('zoomIn').addEventListener('click', () => {
+                state.zoomLevel = Math.min(state.zoomLevel + 0.2, 3);
+                renderMap();
+            });
+
+            document.getElementById('zoomOut').addEventListener('click', () => {
+                state.zoomLevel = Math.max(state.zoomLevel - 0.2, 0.5);
+                renderMap();
+            });
+
+            // Search
+            startInput.addEventListener('input', (e) => {
+                searchLocations(e.target.value, startResults, true);
+            });
+
+            endInput.addEventListener('input', (e) => {
+                searchLocations(e.target.value, endResults, false);
+            });
+
+            // Find route
+            findRouteBtn.addEventListener('click', findRoute);
+            clearRouteBtn.addEventListener('click', clearRoute);
+
+            // Tab switching
+            tabBtns.forEach(btn => {
+                btn.addEventListener('click', () => {
+                    const tabName = btn.getAttribute('data-tab');
+                    tabBtns.forEach(b => b.classList.remove('active'));
+                    tabContents.forEach(c => c.classList.remove('active'));
+                    btn.classList.add('active');
+                    document.getElementById(tabName).classList.add('active');
+
+                    if (tabName === 'places') {
+                        renderPlaces();
+                    }
+                });
+            });
+
+            // Place search
+            placeSearchInput.addEventListener('input', (e) => {
+                renderPlaces(e.target.value);
+            });
         }
 
         // ===== PENCARIAN LOKASI =====
-        searchInput.addEventListener('input', (e) => {
-            const query = e.target.value.toLowerCase();
-            if (query.length === 0) {
-                searchResults.classList.remove('active');
+        function searchLocations(query, resultsDiv, isStart) {
+            if (!query.trim()) {
+                resultsDiv.classList.remove('active');
                 return;
             }
 
-            const filtered = locationsDatabase.filter(loc => 
-                loc.name.toLowerCase().includes(query) ||
-                loc.address.toLowerCase().includes(query) ||
-                loc.category.toLowerCase().includes(query)
+            const filtered = locationsDatabase.filter(loc =>
+                loc.name.toLowerCase().includes(query.toLowerCase())
             );
 
             if (filtered.length === 0) {
-                searchResults.classList.remove('active');
+                resultsDiv.classList.remove('active');
                 return;
             }
 
             let html = '';
-            filtered.forEach(loc => {
+            filtered.slice(0, 8).forEach(loc => {
                 html += `
-                    <div class="search-item" onclick="searchSelect(${loc.id})">
-                        📍 ${loc.name} - ${loc.category}
+                    <div class="search-item" onclick="selectSearchResult(${loc.id}, ${isStart})">
+                        <div style="font-weight: 500; color: #202124;">${loc.name}</div>
+                        <div style="font-size: 0.85em; color: #5f6368;">${loc.category}</div>
                     </div>
                 `;
             });
-            searchResults.innerHTML = html;
-            searchResults.classList.add('active');
-        });
 
-        function searchSelect(id) {
+            resultsDiv.innerHTML = html;
+            resultsDiv.classList.add('active');
+        }
+
+        function selectSearchResult(id, isStart) {
             const location = locationsDatabase.find(l => l.id === id);
-            showLocationInfo(location);
-            searchInput.value = '';
-            searchResults.classList.remove('active');
-        }
-
-        window.searchSelect = searchSelect;
-
-        // ===== RUTE NAVIGASI =====
-        let routeStart = null;
-        let routeEnd = null;
-
-        function selectMarkerForRoute(location, isStart = true) {
-            if (isStart || state.selectedMarkers.length === 0) {
-                routeStart = location;
-                state.selectedMarkers = [location];
+            if (isStart) {
+                state.startLocation = location;
+                startInput.value = location.name;
+                startResults.classList.remove('active');
             } else {
-                routeEnd = location;
-                state.selectedMarkers = [routeStart, routeEnd];
-                drawRoute();
+                state.endLocation = location;
+                endInput.value = location.name;
+                endResults.classList.remove('active');
             }
+            renderMap();
         }
 
-        function drawRoute() {
-            if (!routeStart || !routeEnd) return;
+        window.selectSearchResult = selectSearchResult;
 
-            const x1 = routeStart.lon * state.zoomLevel + state.panOffsetX;
-            const y1 = routeStart.lat * state.zoomLevel + state.panOffsetY;
-            const x2 = routeEnd.lon * state.zoomLevel + state.panOffsetX;
-            const y2 = routeEnd.lat * state.zoomLevel + state.panOffsetY;
+        // ===== PILIH LOKASI DARI PETA =====
+        function selectLocation(location) {
+            if (!state.startLocation) {
+                state.startLocation = location;
+                startInput.value = location.name;
+            } else {
+                state.endLocation = location;
+                endInput.value = location.name;
+            }
+            renderMap();
+        }
 
-            routeSvg.innerHTML = `<line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}"/>`;
+        // ===== CARI RUTE =====
+        async function findRoute() {
+            if (!state.startLocation || !state.endLocation) {
+                alert('Silakan pilih lokasi awal dan tujuan');
+                return;
+            }
 
-            // Hitung rute detail
-            const distance = Math.sqrt(Math.pow(routeEnd.lon - routeStart.lon, 2) + Math.pow(routeEnd.lat - routeStart.lat, 2)) / 10;
-            const duration = Math.round(distance * 5);
+            loading.classList.add('active');
+
+            // Simulasi delay pencarian rute
+            await new Promise(resolve => setTimeout(resolve, 1500));
+
+            // Hitung jarak Euclidean
+            const dx = state.endLocation.x - state.startLocation.x;
+            const dy = state.endLocation.y - state.startLocation.y;
+            const distance = Math.sqrt(dx * dx + dy * dy);
+            const realDistance = (distance * 0.8).toFixed(1); // km
+
+            // Hitung waktu tempuh (simulasi dengan traffic)
+            const baseTime = distance * 1.5;
+            const trafficFactor = Math.random() * 0.5 + 0.8; // 80-130% dari base time
+            const time = Math.round(baseTime * trafficFactor);
+
+            state.currentRoute = {
+                start: state.startLocation,
+                end: state.endLocation,
+                distance: realDistance,
+                time: time,
+                speed: (realDistance / (time / 60)).toFixed(1)
+            };
+
+            displayRoute();
+            loading.classList.remove('active');
+        }
+
+        // ===== TAMPILKAN RUTE =====
+        function displayRoute() {
+            const route = state.currentRoute;
 
             let html = `
                 <div class="route-info">
-                    <div class="route-step">🚩 Mulai: ${routeStart.name}</div>
-                    <div class="route-step">📍 Tujuan: ${routeEnd.name}</div>
-                    <div class="route-step">📏 Jarak: ${distance.toFixed(1)} km</div>
-                    <div class="route-step">⏱️ Estimasi: ${duration} menit</div>
+                    <div class="route-stat">
+                        <span class="route-stat-label">📍 Dari</span>
+                        <span class="route-stat-value">${route.start.name}</span>
+                    </div>
+                    <div class="route-stat">
+                        <span class="route-stat-label">🎯 Ke</span>
+                        <span class="route-stat-value">${route.end.name}</span>
+                    </div>
+                    <div class="route-stat">
+                        <span class="route-stat-label">📏 Jarak</span>
+                        <span class="route-stat-value">${route.distance} km</span>
+                    </div>
+                    <div class="route-stat">
+                        <span class="route-stat-label">⏱️ Waktu Tempuh</span>
+                        <span class="route-stat-value">${route.time} menit</span>
+                    </div>
+                    <div class="route-stat">
+                        <span class="route-stat-label">🚗 Kecepatan Rata-rata</span>
+                        <span class="route-stat-value">${route.speed} km/jam</span>
+                    </div>
                 </div>
-                <div style="color: #00ff00; font-size: 0.85em;">
-                    <strong>Petunjuk Arah:</strong><br>
-                    1. Kendarai ke ${routeStart.address}<br>
-                    2. Lanjutkan selama ±${duration} menit<br>
-                    3. Sampai di ${routeEnd.address}<br>
-                    4. Tujuan ${routeEnd.name} sudah terlihat
+
+                <div style="margin-bottom: 15px;">
+                    <h3 style="color: #202124; margin-bottom: 10px; font-size: 0.95em;">📋 Petunjuk Arah</h3>
+                    <div class="route-steps">
+                        <div class="step">
+                            <div class="step-icon">1</div>
+                            <div class="step-content">
+                                <div class="step-title">Mulai dari ${route.start.name}</div>
+                                <div class="step-distance">Lokasi awal</div>
+                            </div>
+                        </div>
+                        <div class="step">
+                            <div class="step-icon">2</div>
+                            <div class="step-content">
+                                <div class="step-title">Ikuti jalan utama ke arah selatan</div>
+                                <div class="step-distance">Lanjutkan sejauh ${(parseFloat(route.distance) * 0.3).toFixed(1)} km</div>
+                            </div>
+                        </div>
+                        <div class="step">
+                            <div class="step-icon">3</div>
+                            <div class="step-content">
+                                <div class="step-title">Belok ke arah timur</div>
+                                <div class="step-distance">Lanjutkan sejauh ${(parseFloat(route.distance) * 0.4).toFixed(1)} km</div>
+                            </div>
+                        </div>
+                        <div class="step">
+                            <div class="step-icon">4</div>
+                            <div class="step-content">
+                                <div class="step-title">Tiba di ${route.end.name}</div>
+                                <div class="step-distance">Lokasi tujuan - Selesai!</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="traffic-legend">
+                    <div class="traffic-item">
+                        <div class="traffic-color" style="background: #34a853;"></div>
+                        <span>Lancar</span>
+                    </div>
+                    <div class="traffic-item">
+                        <div class="traffic-color" style="background: #fbbc04;"></div>
+                        <span>Sedang</span>
+                    </div>
+                    <div class="traffic-item">
+                        <div class="traffic-color" style="background: #ea4335;"></div>
+                        <span>Macet</span>
+                    </div>
                 </div>
             `;
-            routeInfo.innerHTML = html;
-            routeInfo.classList.remove('empty');
+
+            routeContainer.innerHTML = html;
         }
 
-        document.getElementById('startRouteBtn').addEventListener('click', () => {
-            if (routeStart && routeEnd) {
-                alert(`Rute dari ${routeStart.name} ke ${routeEnd.name} sedang aktif!`);
-            } else {
-                alert('Pilih dua lokasi terlebih dahulu');
+        // ===== HAPUS RUTE =====
+        function clearRoute() {
+            state.startLocation = null;
+            state.endLocation = null;
+            state.currentRoute = null;
+            startInput.value = '';
+            endInput.value = '';
+            routeContainer.innerHTML = `
+                <div class="empty-state">
+                    <div class="empty-state-icon">🛣️</div>
+                    <div>Cari rute untuk melihat petunjuk arah</div>
+                </div>
+            `;
+            renderMap();
+        }
+
+        window.clearRoute = clearRoute;
+
+        // ===== RENDER TEMPAT =====
+        function renderPlaces(query = '') {
+            let places = locationsDatabase;
+
+            if (query) {
+                places = places.filter(p =>
+                    p.name.toLowerCase().includes(query.toLowerCase()) ||
+                    p.category.toLowerCase().includes(query.toLowerCase())
+                );
             }
-        });
 
-        document.getElementById('clearRouteBtn').addEventListener('click', () => {
-            routeStart = null;
-            routeEnd = null;
-            state.selectedMarkers = [];
-            routeSvg.innerHTML = '';
-            routeInfo.innerHTML = '<div class="location-info empty">Pilih dua lokasi untuk melihat rute</div>';
-            routeInfo.classList.add('empty');
-        });
-
-        // ===== RENDER PENGEMBANG =====
-        function renderDevelopers() {
             let html = '';
-            developersDatabase.forEach(dev => {
+            places.forEach(place => {
                 html += `
-                    <div class="dev-card">
-                        <div class="dev-name">👤 ${dev.name}</div>
-                        <div class="dev-role">💼 ${dev.role}</div>
-                        <div class="dev-contact">📧 ${dev.email}</div>
-                        <div class="dev-contact">🐙 ${dev.github}</div>
-                        <div style="color: #00aaff; margin-top: 3px; font-size: 0.9em;">⭐ ${dev.specialty}</div>
+                    <div class="location-box" onclick="selectLocation(${place.id})">
+                        <div style="display: flex; justify-content: space-between; align-items: start;">
+                            <div>
+                                <div class="location-name">${place.name}</div>
+                                <div style="font-size: 0.85em; color: #5f6368;">${place.category}</div>
+                            </div>
+                            <div style="color: #fbbc04; font-weight: 600;">⭐ ${place.rating}</div>
+                        </div>
                     </div>
                 `;
             });
-            developersList.innerHTML = html;
+
+            placesContainer.innerHTML = html;
         }
 
-        // ===== TAB SWITCHING =====
-        tabBtns.forEach(btn => {
-            btn.addEventListener('click', () => {
-                const tabName = btn.getAttribute('data-tab');
-                tabBtns.forEach(b => b.classList.remove('active'));
-                tabContents.forEach(c => c.classList.remove('active'));
-                btn.classList.add('active');
-                document.getElementById(tabName).classList.add('active');
-            });
-        });
-
-        // ===== ZOOM CONTROLS =====
-        document.getElementById('zoomIn').addEventListener('click', () => {
-            state.zoomLevel = Math.min(state.zoomLevel + 0.2, 3);
-            renderMarkers();
-            if (routeStart && routeEnd) drawRoute();
-        });
-
-        document.getElementById('zoomOut').addEventListener('click', () => {
-            state.zoomLevel = Math.max(state.zoomLevel - 0.2, 0.5);
-            renderMarkers();
-            if (routeStart && routeEnd) drawRoute();
-        });
-
-        // ===== MAP PAN =====
-        let isPanning = false;
-        let panStartX, panStartY;
-
-        document.querySelector('.map-canvas').addEventListener('mousedown', (e) => {
-            isPanning = true;
-            panStartX = e.clientX;
-            panStartY = e.clientY;
-        });
-
-        document.addEventListener('mousemove', (e) => {
-            if (!isPanning) return;
-            state.panOffsetX += e.clientX - panStartX;
-            state.panOffsetY += e.clientY - panStartY;
-            panStartX = e.clientX;
-            panStartY = e.clientY;
-            renderMarkers();
-            if (routeStart && routeEnd) drawRoute();
-        });
-
-        document.addEventListener('mouseup', () => {
-            isPanning = false;
-        });
+        window.selectLocation = function(idOrObj) {
+            if (typeof idOrObj === 'number') {
+                const location = locationsDatabase.find(l => l.id === idOrObj);
+                selectLocation(location);
+            } else {
+                selectLocation(idOrObj);
+            }
+        };
 
         // ===== UPDATE KOORDINAT =====
-        function updateUserLocation() {
-            // Simulasi lokasi pengguna
-            state.userLat = 50 + (Math.random() - 0.5) * 10;
-            state.userLon = 50 + (Math.random() - 0.5) * 10;
+        function updateCoords() {
             coordsDisplay.textContent = `Lat: ${state.userLat.toFixed(2)} | Lon: ${state.userLon.toFixed(2)}`;
-            renderMarkers();
         }
 
-        function setupEventListeners() {
-            // Listening untuk perubahan peta
-            document.querySelector('.map-canvas').addEventListener('click', (e) => {
-                if (e.target === document.querySelector('.map-canvas')) {
-                    // Reset jika klik area kosong
-                    state.selectedMarkers = [];
-                }
-            });
-        }
-
-        // ===== START =====
+        // ===== INISIALISASI APLIKASI =====
         init();
+        renderPlaces();
     </script>
 </body>
 </html>
